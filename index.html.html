@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A320 Fuel Record Form</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .btn-reset {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn-print {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* ตารางสไตล์ Technical Logbook */
+        .fuel-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000;
+            font-size: 13px;
+        }
+
+        .fuel-table th, 
+        .fuel-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .fuel-table th {
+            background-color: #eef2f5;
+            font-weight: bold;
+        }
+
+        /* Input Elements */
+        input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #00008b;
+        }
+
+        input:focus {
+            background-color: #e8f0fe;
+        }
+
+        /* Readonly / Calc Display */
+        .calc-val {
+            font-weight: bold;
+            color: #00008b;
+        }
+
+        .unit-label {
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .bg-gray {
+            background-color: #f0f0f0;
+        }
+
+        @media print {
+            .controls {
+                display: none;
+            }
+            body {
+                padding: 0;
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="controls">
+        <button class="btn-reset" onclick="resetForm()">ล้างข้อมูล</button>
+        <button class="btn-print" onclick="window.print()">พิมพ์ / PDF</button>
+    </div>
+
+    <table class="fuel-table">
+        <!-- Header 1 -->
+        <tr>
+            <td colspan="2" style="text-align: left; font-weight: bold;">
+                SG (FROM BOWSER) 
+                <input type="number" id="sg_bowser" step="0.001" style="width: 80px; display: inline-block; border-bottom: 1px solid #000;" oninput="calculate()">
+            </td>
+            <th style="width: 18%;">TANK 1</th>
+            <th style="width: 18%;">CWT</th>
+            <th style="width: 18%;">TANK 2</th>
+            <th style="width: 18%;">TOTAL</th>
+            <th style="width: 5%;"></th>
+        </tr>
+
+        <!-- Row 1: ARRIVAL FUEL -->
+        <tr>
+            <td colspan="2" style="font-weight: bold;">
+                ARRIVAL FUEL 
+                <span style="font-weight: normal; font-size: 11px; float: right;">FROM GAUGE</span>
+            </td>
+            <td><input type="number" id="arr_tank1" oninput="calculate()"></td>
+            <td><input type="number" id="arr_cwt" oninput="calculate()"></td>
+            <td><input type="number" id="arr_tank2" oninput="calculate()"></td>
+            <td class="calc-val" id="arr_total">0</td>
+            <td class="unit-label">KG</td>
+        </tr>
+
+        <!-- Row 2: REFUELLER & UPLIFT -->
+        <tr>
+            <td style="width: 12%; font-weight: bold;">REFUELLER</td>
+            <td style="width: 15%;"><input type="text" id="refueller" style="text-transform: uppercase;"></td>
+            <td style="font-size: 11px; font-weight: bold;">
+                <input type="number" id="uplift_litres" placeholder="LITRES" oninput="calculate()">
+                LITRES X
+            </td>
+            <td style="font-size: 11px; font-weight: bold;">
+                <input type="number" id="uplift_sg" step="0.001" placeholder="SG" oninput="calculate()">
+                SPECIFIC GRAVITY
+            </td>
+            <td class="bg-gray"></td>
+            <td class="calc-val" id="uplift_total">0</td>
+            <td class="unit-label">KG</td>
+        </tr>
+
+        <!-- Row 3: ADD ARRIVAL FUEL -->
+        <tr>
+            <td colspan="5" style="text-align: right; font-weight: bold; padding-right: 15px;">
+                ADD ARRIVAL FUEL (G) TO BOWSER UPLIFT
+            </td>
+            <td class="calc-val" id="add_arrival_calc">0</td>
+            <td class="unit-label">KG</td>
+        </tr>
+
+        <!-- Row 4: DEPARTURE FUEL (CALC) -->
+        <tr>
+            <td colspan="2" style="font-weight: bold;">DEPARTURE FUEL <span style="float: right;">(CALC)</span></td>
+            <td><input type="number" id="dep_calc_tank1" oninput="calculate()"></td>
+            <td><input type="number" id="dep_calc_cwt" oninput="calculate()"></td>
+            <td><input type="number" id="dep_calc_tank2" oninput="calculate()"></td>
+            <td class="calc-val" id="dep_calc_total">0</td>
+            <td class="unit-label">KG</td>
+        </tr>
+
+        <!-- Row 5: DISCREPANCY -->
+        <tr>
+            <td colspan="5" style="text-align: center; font-weight: bold; font-size: 11px;">
+                DEPARTURE (CALC) TO DEPARTURE (GAUGE)
+            </td>
+            <td class="calc-val" id="discrepancy_total">0</td>
+            <td class="unit-label">KG</td>
+        </tr>
+    </table>
+</div>
+
+<script>
+    function calculate() {
+        // SG Bowser
+        const sgBowser = parseFloat(document.getElementById('sg_bowser').value) || 0;
+
+        // Arrival Fuel
+        const arr1 = parseFloat(document.getElementById('arr_tank1').value) || 0;
+        const arrCwt = parseFloat(document.getElementById('arr_cwt').value) || 0;
+        const arr2 = parseFloat(document.getElementById('arr_tank2').value) || 0;
+        const arrTotal = arr1 + arrCwt + arr2;
+        document.getElementById('arr_total').innerText = arrTotal ? arrTotal : 0;
+
+        // Uplift Fuel
+        const litres = parseFloat(document.getElementById('uplift_litres').value) || 0;
+        const upliftSg = parseFloat(document.getElementById('uplift_sg').value) || sgBowser;
+        
+        // Auto Sync SG if Bowser SG entered
+        if (sgBowser && !document.getElementById('uplift_sg').value) {
+            document.getElementById('uplift_sg').value = sgBowser;
+        }
+
+        // ตัดทศนิยมทิ้งโดยไม่ปัดเลขขึ้นหรือลง
+        const upliftTotal = Math.trunc(litres * (upliftSg || 0));
+        document.getElementById('uplift_total').innerText = upliftTotal ? upliftTotal : 0;
+
+        // Add Arrival Fuel to Bowser Uplift
+        const addArrivalCalc = arrTotal + upliftTotal;
+        document.getElementById('add_arrival_calc').innerText = addArrivalCalc ? addArrivalCalc : 0;
+
+        // Departure Fuel (Calc)
+        const depCalc1 = parseFloat(document.getElementById('dep_calc_tank1').value) || 0;
+        const depCalcCwt = parseFloat(document.getElementById('dep_calc_cwt').value) || 0;
+        const depCalc2 = parseFloat(document.getElementById('dep_calc_tank2').value) || 0;
+        let depCalcTotal = depCalc1 + depCalcCwt + depCalc2;
+        
+        if (depCalcTotal === 0 && addArrivalCalc > 0) {
+            depCalcTotal = addArrivalCalc;
+        }
+        document.getElementById('dep_calc_total').innerText = depCalcTotal ? depCalcTotal : 0;
+
+        // Discrepancy
+        document.getElementById('discrepancy_total').innerText = 0;
+    }
+
+    function resetForm() {
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => input.value = '');
+        calculate();
+    }
+</script>
+
+</body>
+</html>
